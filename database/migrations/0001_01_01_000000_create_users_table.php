@@ -23,7 +23,8 @@ return new class extends Migration
             $table->boolean('is_google')->default(false);
             $table->boolean('is_apple')->default(false);
             $table->integer('code')->default(0);
-
+            $table->integer('email_change_otp')->default(0);
+            $table->string('new_email_temp')->nullable();
             $table->boolean('is_verified')->default(false);
             $table->enum('role', ['traveler', 'local_guide','agency']);
             $table->rememberToken();

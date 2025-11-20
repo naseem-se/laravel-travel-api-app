@@ -14,6 +14,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Events\EmailChangeRequested;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -247,4 +250,112 @@ class AuthController extends Controller
             ]);
         }
     }
+
+    public function requestEmailChange(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|unique:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => ['Unauthorized User'],
+            ], 401);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $otp = random_int(100000, 999999);
+
+            $user->email_change_otp = $otp;
+            $user->new_email_temp = $request->email;
+            $user->save();
+
+            event(new EmailChangeRequested($request->email, $otp));
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => ['OTP sent to the new email address.'],
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => ['Something went wrong while processing the request.'],
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function confirmEmailChange(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'otp' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => ['Unauthorized User'],
+            ], 401);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            if ($user->email_change_otp != $request->otp) {
+                return response()->json([
+                    'success' => false,
+                    'message' => ['Invalid OTP'],
+                ], 422);
+            }
+
+            $user->email = $user->new_email_temp;
+            $user->email_verified_at = now();
+            $user->email_change_otp = 0;
+            $user->new_email_temp = null;
+            $user->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => ['Email changed successfully.'],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => ['Something went wrong while confirming email change.'],
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

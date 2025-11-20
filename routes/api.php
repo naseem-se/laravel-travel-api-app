@@ -35,5 +35,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/profile/change/password', 'changePassword');
     });
 
+
+    Route::post('/change-email-request', [AuthController::class, 'requestEmailChange']);
+    Route::post('/change-email-confirm', [AuthController::class, 'confirmEmailChange']);
     Route::post('logout', [AuthController::class, 'logout']);
 });
