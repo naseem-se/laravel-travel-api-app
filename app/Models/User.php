@@ -43,13 +43,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function documents()
+    public function experiences()
     {
-        return $this->hasMany(Document::class, 'user_id');
+        return $this->hasMany(Experience::class, 'user_id');
     }
 
-    public function claimShifts()
-    {
-        return $this->hasOne(ClaimShift::class, 'user_id');
-    }
 }

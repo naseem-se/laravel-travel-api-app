@@ -26,7 +26,6 @@ class LoginRequest extends FormRequest
         return [
             'email' => 'required|email|exists:users,email',
             'password' => 'required',
-            'role' => 'required|in:traveler,local_guide,agency',
         ];
     }
 

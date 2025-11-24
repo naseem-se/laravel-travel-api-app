@@ -1,10 +1,11 @@
 <?php
 
-use App\Http\Middleware\FacilityMode;
-use App\Http\Middleware\WorkerMode;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\AgencyMiddleware;
+use Illuminate\Auth\AuthenticationException;
+use App\Http\Middleware\TravelerMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,8 +15,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        
+        $middleware->alias([
+            'agency.mode' => AgencyMiddleware::class,
+            'traveler.mode' => TravelerMiddleware::class,
+
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+
+        $exceptions->render(function (AuthenticationException $e, $request) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage() ?: 'Unauthenticated. Please login first.',
+        ], 401);
+        });
+
         //
     })->create();

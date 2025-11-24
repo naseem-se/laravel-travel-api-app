@@ -29,7 +29,6 @@ class AuthController extends Controller
             $code = rand(100000, 999999);
 
             $user = User::create([
-                'role' => $validated['role'],
                 'full_name' => $validated['full_name'],
                 'email' => $validated['email'],
                 'phone_number' => $validated['phone_number'],
@@ -206,12 +205,12 @@ class AuthController extends Controller
                 ]);
             }
 
-            if ($user->role != $validated['role']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => ['Your account is not registered to this ' . $validated['role']]
-                ]);
-            }
+            // if ($user->role != $validated['role']) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => ['Your account is not registered to this ' . $validated['role']]
+            //     ]);
+            // }
             $token = $user->createToken('auth_token')->plainTextToken;
             return response()->json([
                 'success' => true,
@@ -353,6 +352,52 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => ['Something went wrong while confirming email change.'],
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateRole(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'role' => 'required|string|in:agency,traveler,local_guide',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => ['Unauthorized User'],
+            ], 401);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $user->role = $request->role;
+            $user->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => ['Role updated successfully.'],
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => ['Something went wrong while updating role.'],
                 'error' => $e->getMessage(),
             ], 500);
         }
