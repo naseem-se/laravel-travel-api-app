@@ -25,6 +25,8 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->enum('status', ['active', 'draft', 'paused'])->default('active');
             $table->integer('max_people')->default(10)->nullable();
+            $table->decimal('rating', 10, 2)->default(0)->nullable();
+            $table->integer('reviews')->default(0)->nullable();
             $table->timestamps();
         });
     }

@@ -30,12 +30,11 @@ class DatabaseSeeder extends Seeder
                 'phone_number' => '03001234567',
                 'email_verified_at' => Carbon::now(),
                 'password' => Hash::make('password123'),
-                'language' => 'English',
-                'currency' => 'USD',
+         
                 'is_google' => false,
                 'is_apple' => false,
-                'code' => 1234,
-                'is_verified' => true,
+                'code' => 123456,
+                'is_verified' => false,
                 'role' => 'agency',
             ],
             [
@@ -44,12 +43,11 @@ class DatabaseSeeder extends Seeder
                 'phone_number' => '03007654321',
                 'email_verified_at' => Carbon::now(),
                 'password' => Hash::make('password123'),
-                'language' => 'English',
-                'currency' => 'USD',
+                
                 'is_google' => false,
                 'is_apple' => false,
-                'code' => 5678,
-                'is_verified' => true,
+                'code' => 567890,
+                'is_verified' => false,
                 'role' => 'traveler',
             ],
             [
@@ -58,15 +56,17 @@ class DatabaseSeeder extends Seeder
                 'phone_number' => '03001112233',
                 'email_verified_at' => Carbon::now(),
                 'password' => Hash::make('password123'),
-                'language' => 'English',
-                'currency' => 'USD',
+               
                 'is_google' => false,
                 'is_apple' => false,
-                'code' => 4321,
-                'is_verified' => true,
+                'code' => 432165,
+                'is_verified' => false,
                 'role' => 'local_guide',
             ],
         ]);
+
+    
+
 
     }
 }

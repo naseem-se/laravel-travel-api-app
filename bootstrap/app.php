@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\AgencyMiddleware;
 use Illuminate\Auth\AuthenticationException;
 use App\Http\Middleware\TravelerMiddleware;
+use App\Http\Middleware\GuideMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'agency.mode' => AgencyMiddleware::class,
             'traveler.mode' => TravelerMiddleware::class,
+            'guide.mode' => GuideMiddleware::class,
 
         ]);
     })

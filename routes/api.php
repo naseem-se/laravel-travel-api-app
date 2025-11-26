@@ -7,7 +7,7 @@ use App\Http\Controllers\User\Api\HomeController;
 use App\Http\Controllers\User\Api\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\User\Api\AgencyController;
+use App\Http\Controllers\User\Api\ExperienceController;
 use App\Http\Controllers\User\Api\TravelerController;
 
 Route::get('/user', function (Request $request) {
@@ -36,16 +36,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/change-email-request', [AuthController::class, 'requestEmailChange']);
     Route::post('/change-email-confirm', [AuthController::class, 'confirmEmailChange']);
+    Route::post('/user/details/store', [AuthController::class, 'storeUserDetails']);
+    Route::post('/user/details/update', [AuthController::class, 'updateUserDetails']);
     Route::post('logout', [AuthController::class, 'logout']);
 });
 
 Route::middleware(['auth:sanctum', 'agency.mode'])->prefix('agency')->group(function () {
-    Route::get('/experience', [AgencyController::class, 'index']);
-    Route::post('/experience', [AgencyController::class, 'store']);
-    Route::get('/experience/{id}', [AgencyController::class, 'show']);
-    Route::put('/experience/{id}', [AgencyController::class, 'update']);
-    Route::delete('/experience/{id}/delete', [AgencyController::class, 'destroy']);
-    Route::post('/experience/{id}/status', [AgencyController::class, 'changeStatus']);
+    Route::get('/experience', [ExperienceController::class, 'index']);
+    Route::post('/experience', [ExperienceController::class, 'store']);
+    Route::get('/experience/{id}', [ExperienceController::class, 'show']);
+    Route::post('/experience/{id}/update', [ExperienceController::class, 'update']);
+    Route::delete('/experience/{id}/delete', [ExperienceController::class, 'destroy']);
+    Route::post('/experience/{id}/status', [ExperienceController::class, 'changeStatus']);
+});
+
+Route::middleware(['auth:sanctum', 'guide.mode'])->prefix('guide')->group(function () {
+    Route::get('/experience', [ExperienceController::class, 'index']);
+    Route::post('/experience', [ExperienceController::class, 'store']);
+    Route::get('/experience/{id}', [ExperienceController::class, 'show']);
+    Route::post('/experience/{id}/update', [ExperienceController::class, 'update']);
+    Route::delete('/experience/{id}/delete', [ExperienceController::class, 'destroy']);
+    Route::post('/experience/{id}/status', [ExperienceController::class, 'changeStatus']);
 });
 
 
@@ -53,6 +64,7 @@ Route::middleware(['auth:sanctum', 'traveler.mode'])->prefix('traveler')->group(
     Route::get('/get/experience', [TravelerController::class, 'getExperiences']);
     Route::get('/get/experience/{id}', [TravelerController::class, 'getExperienceDetails']);
     Route::post('/get/filtered/experiences', [TravelerController::class, 'getFilteredExperiences']);
+    Route::post('/rate/experience', [TravelerController::class, 'addRating']);
 
     Route::get('/get/agencies', [TravelerController::class, 'getAgencies']);
     Route::get('/get/agency/{id}', [TravelerController::class, 'getAgencyDetails']);

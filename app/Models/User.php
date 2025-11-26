@@ -48,4 +48,14 @@ class User extends Authenticatable
         return $this->hasMany(Experience::class, 'user_id');
     }
 
+    public function ratings()
+    {
+        return $this->hasMany(ExperienceRating::class);
+    }
+
+    public function user_details()
+    {
+        return $this->hasOne(UserDetail::class);
+    }
+
 }

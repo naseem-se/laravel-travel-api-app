@@ -19,6 +19,8 @@ class Experience extends Model
         'address',
         'max_people',
         'status',
+        'rating',
+        'reviews',
     ];
 
     public function user()
@@ -40,5 +42,10 @@ class Experience extends Model
     {
         return $this->hasMany(ExperienceTimeSlot::class);
     }
+
+    public function ratings()
+{
+    return $this->hasMany(ExperienceRating::class);
+}
 }
 

@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Events\EmailChangeRequested;
 use Illuminate\Support\Facades\Validator;
+use App\Models\UserDetail;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -163,7 +165,7 @@ class AuthController extends Controller
         try {
             $validated = $request->validated();
             DB::beginTransaction();
-            $user = auth()->user();
+            $user = $request->user();
             $user->update([
                 'password' => bcrypt($validated['password'])
             ]);
@@ -205,12 +207,7 @@ class AuthController extends Controller
                 ]);
             }
 
-            // if ($user->role != $validated['role']) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => ['Your account is not registered to this ' . $validated['role']]
-            //     ]);
-            // }
+
             $token = $user->createToken('auth_token')->plainTextToken;
             return response()->json([
                 'success' => true,
@@ -402,5 +399,219 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    public function storeUserDetails(Request $request)
+    {
+        $user = $request->user();
+        $userType = $user->role; 
+
+        if($user->user_details){
+            return response()->json([
+                'success' => false,
+                'message' => ['User details already exists. You can update it from your profile.'],
+            ], 400);
+        }
+
+        try {
+            // ------------------------------
+            // Dynamic Validation Rules
+            // ------------------------------
+            $rules = [
+                'languages' => 'required|string|max:255',
+                'currency' => 'required|string|max:255',
+
+                'id_upload' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240',
+                'business_certificate' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240',
+                'license' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240',
+
+                'description' => 'nullable|string',
+                'cultural_experience' => 'nullable|string',
+
+                'upload_photos.*' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240'
+            ];
+
+            if ($userType === 'agency' || $userType === 'local_guide') {
+                $rules['id_upload'] = 'required|file|mimes:png,jpg,jpeg,pdf|max:10240';
+                $rules['business_certificate'] = 'required|file|mimes:png,jpg,jpeg,pdf|max:10240';
+                $rules['description'] = 'required|string';
+                $rules['cultural_experience'] = 'required|string';
+                $rules['upload_photos'] = 'required|array|min:1';
+                $rules['upload_photos.*'] = 'required|file|mimes:png,jpg,jpeg,pdf|max:10240';
+            }
+
+            $validated = Validator::make($request->all(), $rules);
+
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' =>  $validated->errors()->all()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Upload single files
+            $idUpload = $request->file('id_upload')?->store('uploads/id', 'public');
+            $businessCertificate = $request->file('business_certificate')?->store('uploads/business', 'public');
+            $license = $request->file('license')?->store('uploads/license', 'public');
+
+            // Multiple upload photos
+            $photos = [];
+            if ($request->hasFile('upload_photos')) {
+                foreach ($request->file('upload_photos') as $file) {
+                    $photos[] = $file->store('uploads/photos', 'public');
+                }
+            }
+
+            $languages = $request->input('languages');
+
+            $details = UserDetail::create([
+                'user_id' => $user->id,
+                'languages' => $languages,
+                'currency' => $request->currency,
+                'id_upload' => $userType != 'traveler' ? $idUpload : null,
+                'business_certificate' => $userType != 'traveler' ? $businessCertificate : null,
+                'license' => $userType != 'traveler' ? $license : null,
+                'description' => $userType != 'traveler' ? $request->description : null,
+                'cultural_experience' => $userType != 'traveler' ? $request->cultural_experience : null,
+                'upload_photos' =>  $userType != 'traveler' ? $photos : null,
+
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User details updated successfully.',
+                'data' => $details
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function updateUserDetails(Request $request)
+    {
+        $user = $request->user();
+        $userType = $user->role;
+
+        try {
+            $rules = [
+                'languages' => 'required|string|max:255',
+                'currency' => 'required|string|max:255',
+
+                'id_upload' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240',
+                'business_certificate' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240',
+                'license' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240',
+
+                'description' => 'nullable|string',
+                'cultural_experience' => 'nullable|string',
+
+                'upload_photos.*' => 'nullable|file|mimes:png,jpg,jpeg,pdf|max:10240'
+            ];
+
+            if ($userType === 'agency' || $userType === 'local_guide') {
+                $rules['id_upload'] = 'required|file|mimes:png,jpg,jpeg,pdf|max:10240';
+                $rules['business_certificate'] = 'required|file|mimes:png,jpg,jpeg,pdf|max:10240';
+                $rules['description'] = 'required|string';
+                $rules['cultural_experience'] = 'required|string';
+                $rules['upload_photos'] = 'required|array|min:1';
+                $rules['upload_photos.*'] = 'required|file|mimes:png,jpg,jpeg,pdf|max:10240';
+            }
+
+            $validated = Validator::make($request->all(), $rules);
+            if ($validated->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validated->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            $details = UserDetail::where('user_id', $user->id)->first();
+
+            if (!$details) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User details not found.'
+                ], 404);
+            }
+
+            // Upload updated files
+            if ($request->hasFile('id_upload')) {
+                if($details->id_upload){
+                    Storage::disk('public')->delete($details->id_upload);
+                }
+                $details->id_upload = $request->file('id_upload')->store('uploads/id', 'public');
+                $details->id_upload_status = 'pending';
+            }
+
+            if ($request->hasFile('business_certificate')) {
+                if($details->business_certificate){
+                    Storage::disk('public')->delete($details->business_certificate);
+                }
+                $details->business_certificate = $request->file('business_certificate')->store('uploads/business', 'public');
+                $details->business_certificate_status = 'pending';
+            }
+
+            if ($request->hasFile('license')) {
+                if($details->license){
+                    Storage::disk('public')->delete($details->license);
+                }
+                $details->license = $request->file('license')->store('uploads/license', 'public');
+                $details->license_status = 'pending';
+            }
+
+            if ($request->hasFile('upload_photos')) {
+                if($details->upload_photos){
+                    foreach ($details->upload_photos as $photo) {
+                        Storage::disk('public')->delete($photo);
+                    }
+                }
+                $photos = [];
+                foreach ($request->file('upload_photos') as $file) {
+                    $photos[] = $file->store('uploads/photos', 'public');
+                }
+                $details->upload_photos = $photos;
+            }
+
+            $languages = $request->input('languages');
+
+            // Update normal fields
+            $details->languages = $languages;
+            $details->currency = $request->currency;
+            $details->description = $userType != 'traveler' ? $request->description : null;
+            $details->cultural_experience = $userType != 'traveler' ? $request->cultural_experience : null;
+            $details->overall_status = $userType != 'traveler' ? 'pending' : $details->overall_status;
+
+            $details->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User details updated successfully.',
+                'data' => $details
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user details.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 
 }

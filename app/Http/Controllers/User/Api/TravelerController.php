@@ -9,6 +9,9 @@ use Exception;
 use App\Models\User;
 use App\Http\Requests\ExperienceFilterRequest;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\ExperienceRatingRequest;
+use App\Models\ExperienceRating;
+
 
 class TravelerController extends Controller
 {
@@ -136,6 +139,60 @@ class TravelerController extends Controller
             });
 
         } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong!',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function addRating(ExperienceRatingRequest $request)
+    {
+        try {
+
+            return DB::transaction(function () use ($request) {
+
+                $experience = Experience::findOrFail($request->experience_id);
+
+                // Prevent multiple ratings from same user
+                $existing = ExperienceRating::where('experience_id', $experience->id)
+                                            ->where('user_id', auth()->id())
+                                            ->first();
+
+                if ($existing) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You have already rated this experience.'
+                    ], 409);
+                }
+
+                // Save rating
+                ExperienceRating::create([
+                    'experience_id' => $experience->id,
+                    'user_id'       => auth()->id(),
+                    'rating'        => $request->rating,
+                    'comment'       => $request->comment,
+                ]);
+
+                // Recalculate average rating
+                $avgRating = ExperienceRating::where('experience_id', $experience->id)->avg('rating');
+
+                $experience->update([
+                    'rating' => number_format($avgRating, 2) // store avg rating
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Rating added successfully.',
+                    'data'    => [
+                        'average_rating' => $experience->rating
+                    ]
+                ], 201);
+            });
+
+        } catch (\Exception $e) {
 
             return response()->json([
                 'success' => false,

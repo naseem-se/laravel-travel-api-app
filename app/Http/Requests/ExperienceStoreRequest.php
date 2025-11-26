@@ -25,7 +25,7 @@ class ExperienceStoreRequest extends FormRequest
     {
         return [
             'title'       => 'required|string|max:255',
-            'category'    => 'required|string|max:255|in:all,adventure,leisures,culture',
+            'category'    => 'required|string|max:255|in:adventure,leisures,culture',
             'description' => 'required|string',
             'address'     => 'required|string',
             'price'       => 'required|numeric|min:0',
@@ -43,8 +43,8 @@ class ExperienceStoreRequest extends FormRequest
             // Media
             'media'                  => 'required|array',
             'media.*.type'           => 'required|in:image,video',
-            'media.*.file'           => 'required|string',
-            // 'media.*.file'           => 'required|file|max:10000',
+            // 'media.*.file'           => 'required|string',
+            'media.*.file'           => 'required|file|mimes:jpeg,png,jpg,gif,svg,mp4,webm,avi,mpg,mkv|max:1000000',
 
             // Timeslots
             'time_slots'                => 'required|array',
@@ -52,7 +52,6 @@ class ExperienceStoreRequest extends FormRequest
             'time_slots.*.end_day'     => 'required|date',
             'time_slots.*.start_time'   => 'required',
             'time_slots.*.end_time'     => 'required',
-            'time_slots.*.max_people'   => 'required|integer|min:1',
         ];
     }
 

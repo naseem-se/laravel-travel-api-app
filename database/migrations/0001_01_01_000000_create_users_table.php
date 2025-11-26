@@ -18,8 +18,7 @@ return new class extends Migration
             $table->string('phone_number')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('language')->nullable();
-            $table->string('currency')->nullable();
+            
             $table->boolean('is_google')->default(false);
             $table->boolean('is_apple')->default(false);
             $table->integer('code')->default(0);
