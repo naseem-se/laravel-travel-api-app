@@ -58,4 +58,22 @@ class User extends Authenticatable
         return $this->hasOne(UserDetail::class);
     }
 
+    // Ratings received from travelers
+    public function ratingsReceived()
+    {
+        return $this->hasMany(UserRating::class, 'user_id');
+    }
+
+    // Ratings given by traveler
+    public function ratingsGiven()
+    {
+        return $this->hasMany(UserRating::class, 'traveler_id');
+    }
+
+    // Average rating of the user (agency/guide)
+    public function averageRating()
+    {
+        return $this->ratingsReceived()->avg('rating');
+    }
+
 }

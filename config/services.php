@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'connect' => env('STRIPE_CONNECT', false),
+        'platform_account' => env('PLATFORM_STRIPE_ACCOUNT'),
+    ],
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'secret' => env('PAYPAL_CLIENT_SECRET'),
+        'mode' => env('PAYPAL_MODE', 'sandbox'),
+    ],
+
 ];

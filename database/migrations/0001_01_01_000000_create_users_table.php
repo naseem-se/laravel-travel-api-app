@@ -25,7 +25,8 @@ return new class extends Migration
             $table->integer('email_change_otp')->default(0);
             $table->string('new_email_temp')->nullable();
             $table->boolean('is_verified')->default(false);
-            $table->enum('role', ['traveler', 'local_guide','agency']);
+            $table->enum('role', ['traveler', 'local_guide','agency','admin'])->default('traveler');
+            $table->decimal('rating', 10, 2)->default(0)->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

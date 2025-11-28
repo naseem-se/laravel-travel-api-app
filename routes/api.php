@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\User\Api\ExperienceController;
 use App\Http\Controllers\User\Api\TravelerController;
+use App\Http\Controllers\User\Api\BookingController;
+use App\Http\Controllers\User\Api\WithdrawController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -68,5 +70,30 @@ Route::middleware(['auth:sanctum', 'traveler.mode'])->prefix('traveler')->group(
 
     Route::get('/get/agencies', [TravelerController::class, 'getAgencies']);
     Route::get('/get/agency/{id}', [TravelerController::class, 'getAgencyDetails']);
+    Route::post('/rate/agency', [TravelerController::class, 'addUserRating']);
+    Route::post('/get/filtered/agencies', [TravelerController::class, 'getFilteredAgencies']);
 
+    Route::get('/get/guides', [TravelerController::class, 'getGuides']);
+    Route::get('/get/guide/{id}', [TravelerController::class, 'getGuideDetails']);
+    Route::post('/rate/guide', [TravelerController::class, 'addUserRating']);
+    Route::post('/get/filtered/guides', [TravelerController::class, 'getFilteredGuides']);
+
+    Route::post('/bookings', [BookingController::class,'store']);
+    Route::post('/bookings/cancel', [BookingController::class,'cancel']);
+
+});
+
+Route::middleware('auth:sanctum')->group(function() {
+
+    // PayPal redirect endpoints (can be public)
+    Route::get('/bookings/{booking}/paypal/return', [BookingController::class,'paypalReturn'])->name('api.bookings.paypal.return');
+    Route::get('/bookings/{booking}/paypal/cancel', [BookingController::class,'paypalCancel'])->name('api.bookings.paypal.cancel');
+
+    // Webhook route should be public (no auth) — Stripe
+    Route::post('/webhooks/stripe', [BookingController::class,'stripeWebhook'])->withoutMiddleware('auth:sanctum')->name('api.webhooks.stripe');
+
+    // Withdraw endpoints
+    Route::post('/withdrawals', [WithdrawController::class,'requestWithdraw']);
+    Route::post('/withdrawals/{withdrawal}/approve', [WithdrawController::class,'approve']);
+    Route::post('/withdrawals/{withdrawal}/reject', [WithdrawController::class,'reject']);
 });
